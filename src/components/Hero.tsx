@@ -2,8 +2,20 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Video } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleStartFreeTrial = () => {
+    navigate("/signup");
+  };
+
+  const handleWatchDemo = () => {
+    // In a real app, this might open a modal or navigate to a demo page
+    alert("Demo video would play here. This feature is coming soon!");
+  };
+
   return (
     <section className="py-12 md:py-24 lg:py-32 hero-pattern">
       <div className="container px-4 md:px-6">
@@ -18,10 +30,10 @@ const Hero = () => {
               </p>
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Button size="lg" className="gap-2">
+              <Button size="lg" className="gap-2" onClick={handleStartFreeTrial}>
                 Start Free Trial <ArrowRight size={16} />
               </Button>
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button size="lg" variant="outline" className="gap-2" onClick={handleWatchDemo}>
                 Watch Demo <Video size={16} />
               </Button>
             </div>

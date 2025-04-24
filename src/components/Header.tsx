@@ -2,12 +2,22 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogin = () => {
+    navigate("/login");
+  };
+
+  const handleSignUp = () => {
+    navigate("/signup");
   };
 
   return (
@@ -32,10 +42,10 @@ const Header = () => {
           <a href="#faq" className="text-sm font-medium hover:text-primary transition-colors">
             FAQ
           </a>
-          <Button variant="outline" className="mr-2">
+          <Button variant="outline" className="mr-2" onClick={handleLogin}>
             Log In
           </Button>
-          <Button>Sign Up</Button>
+          <Button onClick={handleSignUp}>Sign Up</Button>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -81,10 +91,12 @@ const Header = () => {
               FAQ
             </a>
             <div className="flex flex-col space-y-2 pt-2">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleLogin}>
                 Log In
               </Button>
-              <Button className="w-full">Sign Up</Button>
+              <Button className="w-full" onClick={handleSignUp}>
+                Sign Up
+              </Button>
             </div>
           </nav>
         </div>

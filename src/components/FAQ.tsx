@@ -42,6 +42,11 @@ const FAQ = () => {
     },
   ];
 
+  const handleContactSupport = () => {
+    // In a real app, this might navigate to a contact page or open a modal
+    alert("Contact support feature coming soon!");
+  };
+
   return (
     <section id="faq" className="py-12 md:py-24">
       <div className="container px-4 md:px-6">
@@ -74,7 +79,7 @@ const FAQ = () => {
             <p className="text-gray-600 mb-4">
               Our team is here to help with any other questions you might have.
             </p>
-            <Button variant="outline">Contact Support</Button>
+            <Button variant="outline" onClick={handleContactSupport}>Contact Support</Button>
           </div>
         </div>
       </div>
