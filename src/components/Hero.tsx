@@ -1,19 +1,19 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Video } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import VideoDialog from "./VideoDialog";
 
 const Hero = () => {
   const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(false);
 
   const handleStartFreeTrial = () => {
     navigate("/signup");
   };
 
   const handleWatchDemo = () => {
-    // In a real app, this might open a modal or navigate to a demo page
-    alert("Demo video would play here. This feature is coming soon!");
+    setShowVideo(true);
   };
 
   return (
@@ -63,6 +63,7 @@ const Hero = () => {
           </div>
         </div>
       </div>
+      <VideoDialog isOpen={showVideo} onClose={() => setShowVideo(false)} />
     </section>
   );
 };
