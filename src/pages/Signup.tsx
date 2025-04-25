@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -20,8 +21,8 @@ const Signup = () => {
   const onSubmit = (data: any) => {
     // In a real app, this would register the user
     console.log("Signup submitted:", data);
-    alert("Registration successful! This is just a demo.");
-    navigate("/");
+    toast.success("Registration successful!");
+    navigate("/dashboard");
   };
 
   return (

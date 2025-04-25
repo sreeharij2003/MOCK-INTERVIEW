@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,8 +19,8 @@ const Login = () => {
   const onSubmit = (data: any) => {
     // In a real app, this would authenticate the user
     console.log("Login submitted:", data);
-    alert("Login successful! This is just a demo.");
-    navigate("/");
+    toast.success("Login successful!");
+    navigate("/dashboard");
   };
 
   return (
