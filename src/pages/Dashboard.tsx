@@ -1,9 +1,9 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import InterviewTips from "@/components/InterviewTips";
 import { Play, ChevronRight, Award, BarChart, Clock } from "lucide-react";
 
 const Dashboard = () => {
@@ -93,6 +93,8 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        <InterviewTips />
       </main>
       <Footer />
     </div>
