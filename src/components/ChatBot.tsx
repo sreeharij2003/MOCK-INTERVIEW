@@ -19,7 +19,7 @@ interface Message {
 const ChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      content: "Hi! I'm InterviewAce Assistant. How can I help you today?",
+      content: "Hi! How can I help you?",
       isBot: true,
     },
   ]);
@@ -49,13 +49,13 @@ const ChatBot = () => {
   const getBotResponse = (userInput: string): string => {
     const input = userInput.toLowerCase();
     if (input.includes("interview")) {
-      return "To start an interview, log in and click the 'Take Interview' button on your dashboard. You can choose between text and video formats!";
+      return "Click 'Take Interview' on your dashboard.";
     } else if (input.includes("price") || input.includes("cost")) {
-      return "We offer a free trial with 3 mock interviews. Check our pricing page for more details about our subscription plans.";
+      return "We offer a free trial with 3 mock interviews.";
     } else if (input.includes("help")) {
-      return "I can help you with information about our interview process, pricing, technical support, and more. What would you like to know?";
+      return "I can help with interview process, pricing, and support.";
     }
-    return "Feel free to ask about our interview process, pricing, or any other questions you have!";
+    return "Ask me about interviews or pricing!";
   };
 
   return (
@@ -69,12 +69,12 @@ const ChatBot = () => {
             <MessageCircle className="h-6 w-6" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>InterviewAce Assistant</DrawerTitle>
+        <DrawerContent className="h-[500px] rounded-t-xl">
+          <DrawerHeader className="p-3">
+            <DrawerTitle className="text-sm">InterviewAce Assistant</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-4">
-            <div className="h-[400px] overflow-y-auto mb-4 space-y-4">
+          <div className="px-3 pb-3 flex flex-col h-full">
+            <div className="flex-grow overflow-y-auto mb-2 space-y-2">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -83,7 +83,7 @@ const ChatBot = () => {
                   }`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    className={`max-w-[80%] rounded-lg px-3 py-1 text-sm ${
                       message.isBot
                         ? "bg-secondary text-secondary-foreground"
                         : "bg-primary text-primary-foreground"
@@ -98,10 +98,10 @@ const ChatBot = () => {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-grow"
+                placeholder="Type a message..."
+                className="flex-grow text-sm h-10"
               />
-              <Button type="submit" size="icon" className="shrink-0">
+              <Button type="submit" size="icon" className="shrink-0 h-10 w-10">
                 <Send className="h-4 w-4" />
               </Button>
             </form>
