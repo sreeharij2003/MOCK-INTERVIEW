@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -14,7 +13,17 @@ const roleOptions = [
   { value: "product-manager", label: "Product Manager" },
   { value: "data-scientist", label: "Data Scientist" },
   { value: "ux-designer", label: "UX Designer" },
-  { value: "marketing", label: "Marketing" }
+  { value: "marketing", label: "Marketing" },
+  { value: "frontend-developer", label: "Frontend Developer" },
+  { value: "backend-developer", label: "Backend Developer" },
+  { value: "fullstack-developer", label: "Full Stack Developer" },
+  { value: "devops-engineer", label: "DevOps Engineer" },
+  { value: "qa-engineer", label: "QA Engineer" },
+  { value: "data-analyst", label: "Data Analyst" },
+  { value: "project-manager", label: "Project Manager" },
+  { value: "business-analyst", label: "Business Analyst" },
+  { value: "technical-writer", label: "Technical Writer" },
+  { value: "ui-designer", label: "UI Designer" }
 ];
 
 const experienceLevels = [
