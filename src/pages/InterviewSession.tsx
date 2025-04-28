@@ -1,13 +1,13 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Mic, MicOff, Play, Square, Clock } from "lucide-react";
+import { ArrowRight, Mic, MicOff, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 // Mock interview questions based on roles
@@ -76,13 +76,17 @@ const InterviewSession = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [textAnswer, setTextAnswer] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [timeRemaining, setTimeRemaining] = useState(120); // 2 minutes per question
+  const [timeRemaining, setTimeRemaining] = useState(120);
   const [isFinished, setIsFinished] = useState(false);
   
-  const recognitionRef = useRef<any>(null);
-  
+  const {
+    transcript,
+    isRecording,
+    startRecording,
+    stopRecording,
+    isSupported
+  } = useSpeechRecognition();
+
   // Get questions based on role and level
   const questions = role && level && interviewQuestions[role as keyof typeof interviewQuestions]?.[level as "entry" | "mid" | "senior"] || 
                    interviewQuestions.default;
@@ -97,7 +101,6 @@ const InterviewSession = () => {
     
     // Reset states when moving to a new question
     setTextAnswer("");
-    setTranscript("");
     setTimeRemaining(120);
     
     // Timer for the question
@@ -119,55 +122,12 @@ const InterviewSession = () => {
       if (timer) clearInterval(timer);
     };
   }, [currentQuestionIndex, isFinished, navigate, role, level]);
-  
-  // Speech recognition setup
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      
-      recognitionRef.current.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        
-        setTranscript(prevTranscript => prevTranscript + finalTranscript);
-      };
-      
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        setIsRecording(false);
-      };
-    } else {
-      toast.error("Speech recognition not supported in this browser");
-    }
-    
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, []);
-  
+
   const toggleRecording = () => {
     if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
+      stopRecording();
     } else {
-      if (recognitionRef.current) {
-        recognitionRef.current.start();
-        setIsRecording(true);
-      }
+      startRecording();
     }
   };
   
@@ -182,14 +142,12 @@ const InterviewSession = () => {
       // Move to next question
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setTextAnswer("");
-      setTranscript("");
     } else {
       // End of interview
       setIsFinished(true);
       // Stop recording if active
-      if (isRecording && recognitionRef.current) {
-        recognitionRef.current.stop();
-        setIsRecording(false);
+      if (isRecording) {
+        stopRecording();
       }
     }
   };
@@ -262,37 +220,45 @@ const InterviewSession = () => {
                   />
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex justify-center">
-                      <Button
-                        onClick={toggleRecording}
-                        variant={isRecording ? "destructive" : "default"}
-                        size="lg"
-                        className="gap-2"
-                      >
-                        {isRecording ? (
-                          <>
-                            <MicOff size={18} />
-                            Stop Recording
-                          </>
-                        ) : (
-                          <>
-                            <Mic size={18} />
-                            Start Recording
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-md min-h-[200px]">
-                      <p className="text-sm text-gray-500 mb-2">Your transcribed response:</p>
-                      {transcript ? (
-                        <p>{transcript}</p>
-                      ) : (
-                        <p className="text-gray-400 italic">
-                          {isRecording ? "Speaking..." : "Click 'Start Recording' and begin speaking"}
-                        </p>
-                      )}
-                    </div>
+                    {!isSupported ? (
+                      <div className="text-center p-4 bg-yellow-50 text-yellow-800 rounded-md">
+                        Speech recognition is not supported in your browser. Please use a modern browser or switch to text input.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-center">
+                          <Button
+                            onClick={toggleRecording}
+                            variant={isRecording ? "destructive" : "default"}
+                            size="lg"
+                            className="gap-2"
+                          >
+                            {isRecording ? (
+                              <>
+                                <MicOff size={18} />
+                                Stop Recording
+                              </>
+                            ) : (
+                              <>
+                                <Mic size={18} />
+                                Start Recording
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-md min-h-[200px]">
+                          <p className="text-sm text-gray-500 mb-2">Your transcribed response:</p>
+                          {transcript ? (
+                            <p>{transcript}</p>
+                          ) : (
+                            <p className="text-gray-400 italic">
+                              {isRecording ? "Speaking..." : "Click 'Start Recording' and begin speaking"}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </Card>
