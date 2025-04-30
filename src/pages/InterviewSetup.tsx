@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -6,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Video, Mic, MessageSquare, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Video, Mic, MessageSquare, CheckCircle2, Briefcase, Code } from "lucide-react";
+import { technicalCategories } from "@/data/technicalQuestions";
 
 const roleOptions = [
   { value: "software-engineer", label: "Software Engineer" },
@@ -37,18 +39,29 @@ const InterviewSetup = () => {
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
   const [interviewType, setInterviewType] = useState("text");
+  const [interviewMode, setInterviewMode] = useState("behavioral");
+  const [technicalCategory, setTechnicalCategory] = useState("");
   
   const handleStartInterview = () => {
     navigate("/interview/session", { 
       state: { 
         role: selectedRole, 
         level: selectedLevel, 
-        type: interviewType 
+        type: interviewType,
+        mode: interviewMode,
+        category: technicalCategory
       } 
     });
   };
 
-  const isFormValid = selectedRole && selectedLevel;
+  const isFormValid = () => {
+    // For technical interviews, require a category selection
+    if (interviewMode === "technical") {
+      return selectedRole && selectedLevel && technicalCategory;
+    }
+    // For behavioral interviews, just need role and level
+    return selectedRole && selectedLevel;
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -61,6 +74,63 @@ const InterviewSetup = () => {
           </p>
           
           <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Interview Type</CardTitle>
+                <CardDescription>
+                  Choose what kind of interview you want to practice
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="behavioral" value={interviewMode} onValueChange={setInterviewMode}>
+                  <TabsList className="grid grid-cols-2">
+                    <TabsTrigger value="behavioral" className="flex items-center gap-2">
+                      <Briefcase size={16} />
+                      Behavioral/HR
+                    </TabsTrigger>
+                    <TabsTrigger value="technical" className="flex items-center gap-2">
+                      <Code size={16} />
+                      Technical
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="behavioral" className="mt-4">
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      <h4 className="font-medium text-sm">Behavioral Interview</h4>
+                      <p className="text-gray-600 text-sm mt-1">
+                        Practice common HR questions about your experience, behavior, and soft skills.
+                      </p>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="technical" className="mt-4">
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 p-4 rounded-md">
+                        <h4 className="font-medium text-sm">Technical Interview</h4>
+                        <p className="text-gray-600 text-sm mt-1">
+                          Practice technical questions with a 30-second preparation time for each question.
+                        </p>
+                      </div>
+                      
+                      <div className="pt-2">
+                        <label className="text-sm font-medium mb-1 block">Select Technical Category</label>
+                        <Select value={technicalCategory} onValueChange={setTechnicalCategory}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a technical category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {technicalCategories.map((category) => (
+                              <SelectItem key={category.value} value={category.value}>
+                                {category.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+            
             <Card>
               <CardHeader>
                 <CardTitle>Select Interview Role</CardTitle>
@@ -109,7 +179,7 @@ const InterviewSetup = () => {
             
             <Card>
               <CardHeader>
-                <CardTitle>Interview Format</CardTitle>
+                <CardTitle>Response Format</CardTitle>
                 <CardDescription>
                   Choose how you'd like to respond to interview questions
                 </CardDescription>
@@ -156,6 +226,16 @@ const InterviewSetup = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={18} className="text-green-600" />
+                  <span>{interviewMode === "behavioral" ? "Behavioral/HR Interview" : "Technical Interview"}</span>
+                </div>
+                {interviewMode === "technical" && technicalCategory && (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={18} className="text-green-600" />
+                    <span>{technicalCategories.find(c => c.value === technicalCategory)?.label}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={18} className="text-green-600" />
                   <span>{selectedRole ? roleOptions.find(r => r.value === selectedRole)?.label || selectedRole : "No role selected"}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -170,7 +250,7 @@ const InterviewSetup = () => {
               <CardFooter>
                 <Button 
                   onClick={handleStartInterview} 
-                  disabled={!isFormValid}
+                  disabled={!isFormValid()}
                   className="w-full gap-2"
                 >
                   Start Interview

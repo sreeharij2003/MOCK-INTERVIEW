@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -9,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Mic, MicOff, Clock } from "lucide-react";
 import { toast } from "sonner";
+import PreparationTimer from "@/components/PreparationTimer";
+import { getRandomQuestions, TechnicalCategory } from "@/data/technicalQuestions";
 
 // Mock interview questions based on roles
 const interviewQuestions = {
@@ -71,41 +74,78 @@ const interviewQuestions = {
 const InterviewSession = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { role = "", level = "", type = "text" } = location.state || {};
+  const { 
+    role = "", 
+    level = "", 
+    type = "text", 
+    mode = "behavioral",
+    category = "" 
+  } = location.state || {};
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [textAnswer, setTextAnswer] = useState("");
   const [timeRemaining, setTimeRemaining] = useState(120);
   const [isFinished, setIsFinished] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(mode === "technical");
+  const [questions, setQuestions] = useState<any[]>([]);
   
   const {
     transcript,
     isRecording,
     startRecording,
     stopRecording,
+    resetTranscript,
     isSupported
   } = useSpeechRecognition();
 
-  // Get questions based on role and level
-  const questions = role && level && interviewQuestions[role as keyof typeof interviewQuestions]?.[level as "entry" | "mid" | "senior"] || 
-                   interviewQuestions.default;
-  
+  // Setup questions based on interview mode
   useEffect(() => {
-    // Check if role and level exist in the state
     if (!role || !level) {
       toast.error("Interview setup information missing. Redirecting to setup.");
       navigate("/interview");
       return;
     }
+
+    // Set up questions based on interview mode
+    let selectedQuestions;
     
+    if (mode === "technical" && category) {
+      // Get technical questions from the selected category
+      const technicalQuestions = getRandomQuestions(category as TechnicalCategory, 5);
+      selectedQuestions = technicalQuestions.map(q => q.question);
+    } else {
+      // Get behavioral questions based on role and level
+      selectedQuestions = role && level && interviewQuestions[role as keyof typeof interviewQuestions]?.[level as "entry" | "mid" | "senior"] || 
+                      interviewQuestions.default;
+    }
+
+    setQuestions(selectedQuestions);
+    
+    // Initialize answers array with empty strings
+    setAnswers(new Array(selectedQuestions.length).fill(""));
+  }, [role, level, mode, category, navigate]);
+  
+  useEffect(() => {
     // Reset states when moving to a new question
     setTextAnswer("");
-    setTimeRemaining(120);
+    resetTranscript();
     
-    // Timer for the question
+    if (mode === "technical") {
+      // Start in preparation mode for technical interviews
+      setIsPreparing(true);
+    } else {
+      // For behavioral interviews, start the response timer
+      setTimeRemaining(120);
+      startResponseTimer();
+    }
+  }, [currentQuestionIndex]);
+  
+  const startResponseTimer = () => {
     let timer: NodeJS.Timeout | null = null;
-    if (!isFinished) {
+    
+    // Only start timer if not in preparation mode and not finished
+    if (!isPreparing && !isFinished) {
       timer = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
@@ -121,7 +161,14 @@ const InterviewSession = () => {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [currentQuestionIndex, isFinished, navigate, role, level]);
+  };
+
+  const handlePreparationComplete = () => {
+    setIsPreparing(false);
+    setTimeRemaining(120);
+    // Start the response timer
+    startResponseTimer();
+  };
 
   const toggleRecording = () => {
     if (isRecording) {
@@ -142,6 +189,7 @@ const InterviewSession = () => {
       // Move to next question
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setTextAnswer("");
+      resetTranscript();
     } else {
       // End of interview
       setIsFinished(true);
@@ -153,15 +201,36 @@ const InterviewSession = () => {
   };
   
   const handleFinishInterview = () => {
-    // In a real app, you might send the answers to an API for analysis
-    navigate("/interview/results", { 
-      state: { 
-        role, 
-        level, 
-        questions, 
-        answers: [...answers, type === "text" ? textAnswer : transcript] 
-      } 
-    });
+    // Save the last answer if on the last question
+    if (currentQuestionIndex === questions.length - 1) {
+      const lastAnswer = type === "text" ? textAnswer : transcript;
+      const finalAnswers = [...answers];
+      finalAnswers[currentQuestionIndex] = lastAnswer;
+      
+      // Navigate to results
+      navigate("/interview/results", { 
+        state: { 
+          role, 
+          level, 
+          mode,
+          category,
+          questions, 
+          answers: finalAnswers
+        } 
+      });
+    } else {
+      // Navigate to results with current answers
+      navigate("/interview/results", { 
+        state: { 
+          role, 
+          level, 
+          mode,
+          category,
+          questions, 
+          answers 
+        } 
+      });
+    }
   };
 
   // Format time remaining as MM:SS
@@ -193,25 +262,40 @@ const InterviewSession = () => {
             <>
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h1 className="text-2xl font-bold">{role ? roleOptions.find(r => r.value === role)?.label : "Interview"}</h1>
+                  <h1 className="text-2xl font-bold">
+                    {mode === "technical" ? "Technical Interview" : role ? roleOptions.find(r => r.value === role)?.label : "Interview"}
+                    {mode === "technical" && category && (
+                      <span className="text-lg font-medium text-gray-600 block mt-1">
+                        {technicalCategories.find(c => c.value === category)?.label}
+                      </span>
+                    )}
+                  </h1>
                   <p className="text-gray-600">Question {currentQuestionIndex + 1} of {questions.length}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={18} className="text-gray-500" />
-                  <span className={`font-mono ${timeRemaining < 30 ? "text-red-600 font-bold" : ""}`}>
-                    {formatTime(timeRemaining)}
-                  </span>
-                </div>
+                {!isPreparing && (
+                  <div className="flex items-center gap-2">
+                    <Clock size={18} className="text-gray-500" />
+                    <span className={`font-mono ${timeRemaining < 30 ? "text-red-600 font-bold" : ""}`}>
+                      {formatTime(timeRemaining)}
+                    </span>
+                  </div>
+                )}
               </div>
               
               <Progress value={progressPercentage} className="mb-8" />
               
               <Card className="p-6 mb-8">
                 <h2 className="text-xl font-semibold mb-4">
-                  {questions[currentQuestionIndex]}
+                  {questions[currentQuestionIndex] || "Loading question..."}
                 </h2>
                 
-                {type === "text" ? (
+                {isPreparing ? (
+                  <PreparationTimer 
+                    duration={30} 
+                    onComplete={handlePreparationComplete} 
+                    onSkip={handlePreparationComplete}
+                  />
+                ) : type === "text" ? (
                   <Textarea
                     value={textAnswer}
                     onChange={(e) => setTextAnswer(e.target.value)}
@@ -264,10 +348,12 @@ const InterviewSession = () => {
               </Card>
               
               <div className="flex justify-end">
-                <Button onClick={handleNextQuestion} className="gap-2">
-                  {currentQuestionIndex < questions.length - 1 ? "Next Question" : "Finish Interview"}
-                  <ArrowRight size={16} />
-                </Button>
+                {!isPreparing && (
+                  <Button onClick={handleNextQuestion} className="gap-2">
+                    {currentQuestionIndex < questions.length - 1 ? "Next Question" : "Finish Interview"}
+                    <ArrowRight size={16} />
+                  </Button>
+                )}
               </div>
             </>
           )}
@@ -287,4 +373,12 @@ const roleOptions = [
   { value: "data-scientist", label: "Data Scientist" },
   { value: "ux-designer", label: "UX Designer" },
   { value: "marketing", label: "Marketing" }
+];
+
+// Import and define technical categories for display
+const technicalCategories = [
+  { value: 'dbms', label: 'Database Management Systems (DBMS)' },
+  { value: 'os', label: 'Operating Systems' },
+  { value: 'data-structures', label: 'Data Structures & Algorithms' },
+  { value: 'computer-networks', label: 'Computer Networks' }
 ];

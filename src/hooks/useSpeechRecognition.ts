@@ -47,7 +47,7 @@ declare global {
   }
 }
 
-export const useSpeechRecognition = () => {
+export const useSpeechRecognition = (language = 'en-US') => {
   const [transcript, setTranscript] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -60,6 +60,7 @@ export const useSpeechRecognition = () => {
       recognitionRef.current = new SpeechRecognitionAPI();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = language;
 
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = '';
@@ -87,7 +88,7 @@ export const useSpeechRecognition = () => {
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, [language]);
 
   const startRecording = () => {
     if (recognitionRef.current) {
