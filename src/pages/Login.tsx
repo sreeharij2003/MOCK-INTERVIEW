@@ -13,15 +13,14 @@ const Login = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  const handleOAuthSignIn = async (provider: "google" | "github") => {
+  const handleOAuthSignIn = async (provider: "oauth_google" | "oauth_github") => {
     try {
       const result = await signIn.authenticateWithRedirect({
         strategy: provider,
         redirectUrl: "/dashboard",
         redirectUrlComplete: "/dashboard",
       });
-      await setActive({ session: result.createdSessionId });
-      navigate("/dashboard");
+      // No need to set active session here since we're redirecting
     } catch (err) {
       console.error("OAuth error", err);
       toast.error("Sign in failed. Please try again.");
@@ -112,7 +111,7 @@ const Login = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleOAuthSignIn("google")}
+                onClick={() => handleOAuthSignIn("oauth_google")}
                 className="w-full"
               >
                 Google
@@ -120,7 +119,7 @@ const Login = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleOAuthSignIn("github")}
+                onClick={() => handleOAuthSignIn("oauth_github")}
                 className="w-full"
               >
                 GitHub
