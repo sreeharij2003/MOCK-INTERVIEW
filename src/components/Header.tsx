@@ -4,29 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth, UserButton } from "@clerk/clerk-react";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isSignedIn, isLoaded } = useAuth();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
   const handleLogin = () => {
-    setIsLoggedIn(true);
-    navigate("/dashboard");
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    toast({
-      title: "Logged out successfully",
-      description: "You have been logged out of your account.",
-    });
-    navigate("/");
+    navigate("/login");
   };
 
   const handleSignUp = () => {
@@ -76,20 +67,36 @@ const Header = () => {
           >
             FAQ
           </a>
-          <Button 
-            variant="outline" 
-            className="mr-2 hover:bg-primary/10" 
-            onClick={isLoggedIn ? handleLogout : handleLogin}
-          >
-            {isLoggedIn ? "Log Out" : "Log In"}
-          </Button>
-          {!isLoggedIn && (
-            <Button 
-              onClick={handleSignUp}
-              className="bg-primary hover:bg-primary/90 transition-colors"
-            >
-              Sign Up
-            </Button>
+          {isLoaded && isSignedIn ? (
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                className="mr-2 hover:bg-primary/10" 
+                onClick={() => navigate("/dashboard")}
+              >
+                Dashboard
+              </Button>
+              <UserButton 
+                afterSignOutUrl="/"
+                afterSwitchSessionUrl="/dashboard"
+              />
+            </div>
+          ) : (
+            <>
+              <Button 
+                variant="outline" 
+                className="mr-2 hover:bg-primary/10" 
+                onClick={handleLogin}
+              >
+                Log In
+              </Button>
+              <Button 
+                onClick={handleSignUp}
+                className="bg-primary hover:bg-primary/90 transition-colors"
+              >
+                Sign Up
+              </Button>
+            </>
           )}
         </nav>
 
@@ -136,20 +143,47 @@ const Header = () => {
               FAQ
             </a>
             <div className="flex flex-col space-y-2 pt-2">
-              <Button 
-                variant="outline" 
-                className="w-full hover:bg-primary/10"
-                onClick={isLoggedIn ? handleLogout : handleLogin}
-              >
-                {isLoggedIn ? "Log Out" : "Log In"}
-              </Button>
-              {!isLoggedIn && (
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
-                  onClick={handleSignUp}
-                >
-                  Sign Up
-                </Button>
+              {isLoaded && isSignedIn ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="w-full hover:bg-primary/10"
+                    onClick={() => {
+                      navigate("/dashboard");
+                      toggleMobileMenu();
+                    }}
+                  >
+                    Dashboard
+                  </Button>
+                  <div className="flex justify-center py-2">
+                    <UserButton 
+                      afterSignOutUrl="/"
+                      afterSwitchSessionUrl="/dashboard"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="w-full hover:bg-primary/10"
+                    onClick={() => {
+                      handleLogin();
+                      toggleMobileMenu();
+                    }}
+                  >
+                    Log In
+                  </Button>
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                    onClick={() => {
+                      handleSignUp();
+                      toggleMobileMenu();
+                    }}
+                  >
+                    Sign Up
+                  </Button>
+                </>
               )}
             </div>
           </nav>
