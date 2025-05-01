@@ -13,7 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import InterviewSetup from "./pages/InterviewSetup";
 import InterviewSession from "./pages/InterviewSession";
 import InterviewResults from "./pages/InterviewResults";
-import { ProgressProvider } from "./contexts/ProgressContext";
+import { ProgressProvider, useProgress } from "./contexts/ProgressContext";
 
 const queryClient = new QueryClient();
 
@@ -131,9 +131,17 @@ function useAuth() {
     // Simple mock authentication
     if (password.length >= 6) {
       const userData = { email };
+      
+      // Store the user data
       localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Update state
       setUser(userData);
       setIsSignedIn(true);
+      
+      // Dispatch event for user change
+      window.dispatchEvent(new CustomEvent('user-changed'));
+      
       return true;
     }
     return false;
@@ -143,6 +151,9 @@ function useAuth() {
     localStorage.removeItem('user');
     setUser(null);
     setIsSignedIn(false);
+    
+    // Dispatch event for user change
+    window.dispatchEvent(new CustomEvent('user-changed'));
   };
   
   return {

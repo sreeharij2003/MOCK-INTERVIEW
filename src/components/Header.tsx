@@ -5,12 +5,14 @@ import { Menu, X, Home, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/App";
+import { useProgress } from "@/contexts/ProgressContext";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isSignedIn, isLoaded, user, signOut } = useAuthContext();
+  const { resetUserData } = useProgress();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);

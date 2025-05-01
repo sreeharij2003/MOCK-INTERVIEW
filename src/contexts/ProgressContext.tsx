@@ -26,6 +26,7 @@ interface ProgressContextType {
   skills: SkillScore[];
   addSession: (session: Omit<Session, "id" | "date">) => void;
   upgradeAccount: () => void;
+  resetUserData: () => void;
 }
 
 const initialContext: ProgressContextType = {
@@ -36,30 +37,67 @@ const initialContext: ProgressContextType = {
   skills: [],
   addSession: () => {},
   upgradeAccount: () => {},
+  resetUserData: () => {},
 };
 
 export const ProgressContext = createContext<ProgressContextType>(initialContext);
 
 export const useProgress = () => useContext(ProgressContext);
 
+// Initial default skills
+const defaultSkills: SkillScore[] = [
+  { name: "Communication", score: 0, lastChange: 'unchanged' },
+  { name: "Problem Solving", score: 0, lastChange: 'unchanged' },
+  { name: "Technical Knowledge", score: 0, lastChange: 'unchanged' },
+  { name: "Confidence", score: 0, lastChange: 'unchanged' }
+];
+
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [remainingAttempts, setRemainingAttempts] = useState(3);
   const [isPremium, setIsPremium] = useState(false);
-  const [skills, setSkills] = useState<SkillScore[]>([
-    { name: "Communication", score: 0, lastChange: 'unchanged' },
-    { name: "Problem Solving", score: 0, lastChange: 'unchanged' },
-    { name: "Technical Knowledge", score: 0, lastChange: 'unchanged' },
-    { name: "Confidence", score: 0, lastChange: 'unchanged' }
-  ]);
+  const [skills, setSkills] = useState<SkillScore[]>(defaultSkills);
+
+  // Get current user email to use as key for localStorage
+  const getUserKey = (): string => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        return user.email || 'default-user';
+      }
+      return 'default-user';
+    } catch (err) {
+      console.error("Error getting user key:", err);
+      return 'default-user';
+    }
+  };
+
+  // Generate storage keys specific to the current user
+  const getStorageKey = (key: string): string => {
+    const userKey = getUserKey();
+    return `${userKey}-${key}`;
+  };
+
+  // Reset user data when they log out
+  const resetUserData = () => {
+    setSessions([]);
+    setRemainingAttempts(3);
+    setIsPremium(false);
+    setSkills([...defaultSkills]);
+  };
 
   // Load data from localStorage on initial load - make sure this runs only once
   useEffect(() => {
     try {
-      const storedSessions = localStorage.getItem('interview_sessions');
-      const storedAttempts = localStorage.getItem('remaining_attempts');
-      const storedPremium = localStorage.getItem('is_premium');
-      const storedSkills = localStorage.getItem('skills');
+      const userKey = getUserKey();
+      
+      const storedSessions = localStorage.getItem(getStorageKey('interview_sessions'));
+      const storedAttempts = localStorage.getItem(getStorageKey('remaining_attempts'));
+      const storedPremium = localStorage.getItem(getStorageKey('is_premium'));
+      const storedSkills = localStorage.getItem(getStorageKey('skills'));
+      
+      console.log(`Loading data for user: ${userKey}`);
       
       if (storedSessions) setSessions(JSON.parse(storedSessions));
       if (storedAttempts) setRemainingAttempts(parseInt(storedAttempts, 10));
@@ -68,29 +106,62 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       console.error("Error loading data from localStorage:", error);
       // Initialize with default values if there's an error
-      localStorage.setItem('interview_sessions', JSON.stringify([]));
-      localStorage.setItem('remaining_attempts', '3');
-      localStorage.setItem('is_premium', 'false');
-      localStorage.setItem('skills', JSON.stringify([
-        { name: "Communication", score: 0, lastChange: 'unchanged' },
-        { name: "Problem Solving", score: 0, lastChange: 'unchanged' },
-        { name: "Technical Knowledge", score: 0, lastChange: 'unchanged' },
-        { name: "Confidence", score: 0, lastChange: 'unchanged' }
-      ]));
+      resetUserData();
     }
   }, []);
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem('interview_sessions', JSON.stringify(sessions));
-      localStorage.setItem('remaining_attempts', String(remainingAttempts));
-      localStorage.setItem('is_premium', JSON.stringify(isPremium));
-      localStorage.setItem('skills', JSON.stringify(skills));
+      // Only save data if we have a user
+      if (getUserKey() !== 'default-user') {
+        localStorage.setItem(getStorageKey('interview_sessions'), JSON.stringify(sessions));
+        localStorage.setItem(getStorageKey('remaining_attempts'), String(remainingAttempts));
+        localStorage.setItem(getStorageKey('is_premium'), JSON.stringify(isPremium));
+        localStorage.setItem(getStorageKey('skills'), JSON.stringify(skills));
+        console.log(`Saved data for user: ${getUserKey()}`);
+      }
     } catch (error) {
       console.error("Error saving data to localStorage:", error);
     }
   }, [sessions, remainingAttempts, isPremium, skills]);
+
+  // Load user data when user changes
+  useEffect(() => {
+    const handleUserChange = () => {
+      try {
+        const userKey = getUserKey();
+        console.log(`User changed to: ${userKey}`);
+        
+        // Reset data first
+        resetUserData();
+        
+        // Then load user-specific data if it exists
+        const storedSessions = localStorage.getItem(getStorageKey('interview_sessions'));
+        const storedAttempts = localStorage.getItem(getStorageKey('remaining_attempts'));
+        const storedPremium = localStorage.getItem(getStorageKey('is_premium'));
+        const storedSkills = localStorage.getItem(getStorageKey('skills'));
+        
+        if (storedSessions) setSessions(JSON.parse(storedSessions));
+        if (storedAttempts) setRemainingAttempts(parseInt(storedAttempts, 10));
+        if (storedPremium) setIsPremium(JSON.parse(storedPremium));
+        if (storedSkills) setSkills(JSON.parse(storedSkills));
+      } catch (error) {
+        console.error("Error handling user change:", error);
+        resetUserData();
+      }
+    };
+    
+    // Set up event listener for user changes
+    window.addEventListener('user-changed', handleUserChange);
+    
+    // Check user on mount
+    handleUserChange();
+    
+    return () => {
+      window.removeEventListener('user-changed', handleUserChange);
+    };
+  }, []);
 
   const addSession = (sessionData: Omit<Session, "id" | "date">) => {
     console.log("Adding new session:", sessionData);
@@ -139,8 +210,14 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         
         // Determine if skill improved or declined
-        const lastChange = newScore > skill.score ? 'improved' : 
-                           newScore < skill.score ? 'declined' : 'unchanged';
+        let lastChange: 'improved' | 'declined' | 'unchanged';
+        if (newScore > skill.score) {
+          lastChange = 'improved';
+        } else if (newScore < skill.score) {
+          lastChange = 'declined';
+        } else {
+          lastChange = 'unchanged';
+        }
         
         return {
           ...skill,
@@ -172,6 +249,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         skills,
         addSession,
         upgradeAccount,
+        resetUserData,
       }}
     >
       {children}
