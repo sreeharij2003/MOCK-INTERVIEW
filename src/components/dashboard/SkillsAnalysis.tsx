@@ -7,6 +7,8 @@ import { Progress } from "@/components/ui/progress";
 const SkillsAnalysis: React.FC = () => {
   const { skills, sessions } = useProgress();
   
+  console.log("Skills in SkillsAnalysis:", skills);
+  
   if (sessions.length === 0) {
     return (
       <div className="bg-white p-4 rounded-xl shadow-sm border">
