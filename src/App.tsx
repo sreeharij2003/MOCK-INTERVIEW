@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import InterviewSetup from "./pages/InterviewSetup";
 import InterviewSession from "./pages/InterviewSession";
 import InterviewResults from "./pages/InterviewResults";
+import { ProgressProvider } from "./contexts/ProgressContext";
 
 const queryClient = new QueryClient();
 
@@ -57,53 +58,55 @@ const App = () => {
 
   return (
     <AuthContext.Provider value={auth}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/interview" 
-                element={
-                  <ProtectedRoute>
-                    <InterviewSetup />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/interview/session" 
-                element={
-                  <ProtectedRoute>
-                    <InterviewSession />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/interview/results" 
-                element={
-                  <ProtectedRoute>
-                    <InterviewResults />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <ProgressProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/interview" 
+                  element={
+                    <ProtectedRoute>
+                      <InterviewSetup />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/interview/session" 
+                  element={
+                    <ProtectedRoute>
+                      <InterviewSession />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/interview/results" 
+                  element={
+                    <ProtectedRoute>
+                      <InterviewResults />
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ProgressProvider>
     </AuthContext.Provider>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -14,6 +13,7 @@ import PreparationTimer from "@/components/PreparationTimer";
 import { getRandomQuestions, TechnicalCategory, TechnicalQuestion } from "@/data/technicalQuestions";
 import { getHRQuestions } from "@/utils/questionScraper";
 import { Loader2 } from "lucide-react";
+import { useProgress } from "@/contexts/ProgressContext";
 
 // Mock interview questions based on roles
 const interviewQuestions = {
@@ -76,6 +76,8 @@ const interviewQuestions = {
 const InterviewSession = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isTrialExpired } = useProgress();
+  
   const { 
     role = "", 
     level = "", 
@@ -92,6 +94,7 @@ const InterviewSession = () => {
   const [isPreparing, setIsPreparing] = useState(mode === "technical");
   const [questions, setQuestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionStartTime] = useState<number>(Date.now());
   
   const {
     transcript,
@@ -101,6 +104,16 @@ const InterviewSession = () => {
     resetTranscript,
     isSupported
   } = useSpeechRecognition();
+
+  // Check if trial has expired
+  useEffect(() => {
+    if (isTrialExpired) {
+      toast.error("Your trial has expired", {
+        description: "Please upgrade to continue using interview practice sessions",
+      });
+      navigate("/dashboard");
+    }
+  }, [isTrialExpired, navigate]);
 
   // Setup questions based on interview mode
   useEffect(() => {
@@ -230,6 +243,9 @@ const InterviewSession = () => {
       const finalAnswers = [...answers];
       finalAnswers[currentQuestionIndex] = lastAnswer;
       
+      // Calculate session duration
+      const sessionDuration = Math.round((Date.now() - sessionStartTime) / 1000);
+      
       // Navigate to results
       navigate("/interview/results", { 
         state: { 
@@ -238,10 +254,14 @@ const InterviewSession = () => {
           mode,
           category,
           questions, 
-          answers: finalAnswers
+          answers: finalAnswers,
+          duration: sessionDuration
         } 
       });
     } else {
+      // Calculate session duration
+      const sessionDuration = Math.round((Date.now() - sessionStartTime) / 1000);
+      
       // Navigate to results with current answers
       navigate("/interview/results", { 
         state: { 
@@ -250,7 +270,8 @@ const InterviewSession = () => {
           mode,
           category,
           questions, 
-          answers 
+          answers,
+          duration: sessionDuration
         } 
       });
     }

@@ -1,11 +1,12 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Download, BarChart, ThumbsUp, Star } from "lucide-react";
+import { useProgress } from "@/contexts/ProgressContext";
 
 // Mock feedback generator - in a real app, this would come from an API
 const generateFeedback = (question: string, answer: string) => {
@@ -36,7 +37,16 @@ const generateFeedback = (question: string, answer: string) => {
 const InterviewResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { role = "", level = "", questions = [], answers = [] } = location.state || {};
+  const { addSession } = useProgress();
+  
+  const { 
+    role = "", 
+    level = "", 
+    mode = "behavioral",
+    category = "",
+    questions = [], 
+    answers = [] 
+  } = location.state || {};
   
   // Generate feedback for each answer
   const questionFeedback = questions.map((question: string, index: number) => {
@@ -77,6 +87,21 @@ const InterviewResults = () => {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([improvement]) => improvement);
+  
+  // Save session to progress context
+  useEffect(() => {
+    // Only save if there are questions and answers
+    if (questions.length > 0) {
+      addSession({
+        role,
+        type: mode,
+        category,
+        score: overallScore,
+        questionsCount: questions.length,
+        duration: questions.length * 120, // Rough estimate of duration
+      });
+    }
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   
   const handleStartNew = () => {
     navigate("/interview");
