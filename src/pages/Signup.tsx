@@ -2,25 +2,27 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useSignUp } from "@clerk/clerk-react";
+import { useAuthContext } from "@/App";
 import { toast } from "sonner";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { isLoaded, signUp, setActive } = useSignUp();
+  const { signIn, isLoaded } = useAuthContext();
   
   if (!isLoaded) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  const handleOAuthSignUp = async (provider: "oauth_google" | "oauth_github") => {
+  const handleOAuthSignUp = async (provider: string) => {
     try {
-      await signUp.authenticateWithRedirect({
-        strategy: provider,
-        redirectUrl: "/dashboard",
-        redirectUrlComplete: "/dashboard",
-      });
-      // No need to set active session here since we're redirecting
+      // Mock OAuth signup
+      const success = await signIn("user@example.com", "password123");
+      if (success) {
+        toast.success("Registration successful!");
+        navigate("/dashboard");
+      } else {
+        toast.error("Sign up failed. Please try again.");
+      }
     } catch (err) {
       console.error("OAuth error", err);
       toast.error("Sign up failed. Please try again.");
@@ -36,24 +38,18 @@ const Signup = () => {
     const password = formData.get("password") as string;
 
     try {
-      const result = await signUp.create({
-        firstName,
-        lastName,
-        emailAddress: email,
-        password,
-      });
-
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+      // Mock signup process
+      const success = await signIn(email, password);
+      
+      if (success) {
         toast.success("Registration successful!");
         navigate("/dashboard");
       } else {
-        // Handle verification steps if needed
-        console.log("Additional verification needed", result);
+        toast.error("Sign up failed. Please try again.");
       }
     } catch (err: any) {
       console.error("Sign up error", err);
-      toast.error(err.errors?.[0]?.message || "Sign up failed. Please try again.");
+      toast.error("Sign up failed. Please try again.");
     }
   };
 
@@ -134,7 +130,7 @@ const Signup = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleOAuthSignUp("oauth_google")}
+                onClick={() => handleOAuthSignUp("google")}
                 className="w-full"
               >
                 Google
@@ -142,7 +138,7 @@ const Signup = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleOAuthSignUp("oauth_github")}
+                onClick={() => handleOAuthSignUp("github")}
                 className="w-full"
               >
                 GitHub

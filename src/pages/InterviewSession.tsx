@@ -11,7 +11,9 @@ import { Card } from "@/components/ui/card";
 import { ArrowRight, Mic, MicOff, Clock } from "lucide-react";
 import { toast } from "sonner";
 import PreparationTimer from "@/components/PreparationTimer";
-import { getRandomQuestions, TechnicalCategory } from "@/data/technicalQuestions";
+import { getRandomQuestions, TechnicalCategory, TechnicalQuestion } from "@/data/technicalQuestions";
+import { getHRQuestions } from "@/utils/questionScraper";
+import { Loader2 } from "lucide-react";
 
 // Mock interview questions based on roles
 const interviewQuestions = {
@@ -88,7 +90,8 @@ const InterviewSession = () => {
   const [timeRemaining, setTimeRemaining] = useState(120);
   const [isFinished, setIsFinished] = useState(false);
   const [isPreparing, setIsPreparing] = useState(mode === "technical");
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const {
     transcript,
@@ -101,29 +104,49 @@ const InterviewSession = () => {
 
   // Setup questions based on interview mode
   useEffect(() => {
-    if (!role || !level) {
-      toast.error("Interview setup information missing. Redirecting to setup.");
-      navigate("/interview");
-      return;
-    }
+    const fetchQuestions = async () => {
+      if (!role || !level) {
+        toast.error("Interview setup information missing. Redirecting to setup.");
+        navigate("/interview");
+        return;
+      }
 
-    // Set up questions based on interview mode
-    let selectedQuestions;
-    
-    if (mode === "technical" && category) {
-      // Get technical questions from the selected category
-      const technicalQuestions = getRandomQuestions(category as TechnicalCategory, 5);
-      selectedQuestions = technicalQuestions.map(q => q.question);
-    } else {
-      // Get behavioral questions based on role and level
-      selectedQuestions = role && level && interviewQuestions[role as keyof typeof interviewQuestions]?.[level as "entry" | "mid" | "senior"] || 
-                      interviewQuestions.default;
-    }
+      setIsLoading(true);
+      
+      try {
+        // Set up questions based on interview mode
+        let selectedQuestions: string[] = [];
+        
+        if (mode === "technical" && category) {
+          // Get technical questions from the selected category using our scraper
+          const techQuestions = await getRandomQuestions(category as TechnicalCategory, 5);
+          selectedQuestions = techQuestions.map(q => q.question);
+        } else if (mode === "behavioral") {
+          // For behavioral interviews, either get role-specific or default HR questions
+          const roleQuestions = role && level && 
+            interviewQuestions[role as keyof typeof interviewQuestions]?.[level as "entry" | "mid" | "senior"];
+          
+          if (roleQuestions) {
+            selectedQuestions = roleQuestions;
+          } else {
+            // If no specific role questions, get general HR questions from scraper
+            selectedQuestions = await getHRQuestions();
+          }
+        }
 
-    setQuestions(selectedQuestions);
+        setQuestions(selectedQuestions);
+        
+        // Initialize answers array with empty strings
+        setAnswers(new Array(selectedQuestions.length).fill(""));
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching questions:", error);
+        toast.error("Failed to load interview questions");
+        setIsLoading(false);
+      }
+    };
     
-    // Initialize answers array with empty strings
-    setAnswers(new Array(selectedQuestions.length).fill(""));
+    fetchQuestions();
   }, [role, level, mode, category, navigate]);
   
   useEffect(() => {
@@ -242,6 +265,23 @@ const InterviewSession = () => {
   
   // Progress percentage
   const progressPercentage = ((currentQuestionIndex) / questions.length) * 100;
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow container py-12 px-4 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+            <h2 className="text-2xl font-semibold mb-2">Loading Interview Questions</h2>
+            <p className="text-gray-500">Fetching questions for your interview session...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

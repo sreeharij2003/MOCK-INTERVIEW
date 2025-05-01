@@ -1,16 +1,16 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Home } from "lucide-react";
+import { Menu, X, Home, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, UserButton } from "@clerk/clerk-react";
+import { useAuthContext } from "@/App";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, user, signOut } = useAuthContext();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -22,6 +22,15 @@ const Header = () => {
 
   const handleSignUp = () => {
     navigate("/signup");
+  };
+
+  const handleSignOut = () => {
+    signOut();
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out of your account",
+    });
+    navigate("/");
   };
 
   const goToHome = () => {
@@ -76,10 +85,14 @@ const Header = () => {
               >
                 Dashboard
               </Button>
-              <UserButton 
-                afterSignOutUrl="/"
-                afterSwitchSessionUrl="/dashboard"
-              />
+              <div className="relative">
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
+                >
+                  <User size={18} />
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -155,12 +168,17 @@ const Header = () => {
                   >
                     Dashboard
                   </Button>
-                  <div className="flex justify-center py-2">
-                    <UserButton 
-                      afterSignOutUrl="/"
-                      afterSwitchSessionUrl="/dashboard"
-                    />
-                  </div>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSignOut();
+                      toggleMobileMenu();
+                    }}
+                  >
+                    <LogOut size={16} className="mr-2" />
+                    Sign Out
+                  </Button>
                 </>
               ) : (
                 <>

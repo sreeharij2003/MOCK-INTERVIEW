@@ -2,25 +2,27 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useSignIn } from "@clerk/clerk-react";
+import { useAuthContext } from "@/App";
 import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { isLoaded, signIn, setActive } = useSignIn();
+  const { signIn, isLoaded } = useAuthContext();
 
   if (!isLoaded) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  const handleOAuthSignIn = async (provider: "oauth_google" | "oauth_github") => {
+  const handleOAuthSignIn = async (provider: string) => {
     try {
-      const result = await signIn.authenticateWithRedirect({
-        strategy: provider,
-        redirectUrl: "/dashboard",
-        redirectUrlComplete: "/dashboard",
-      });
-      // No need to set active session here since we're redirecting
+      // Mock OAuth authentication
+      const success = await signIn("user@example.com", "password123");
+      if (success) {
+        toast.success("Login successful!");
+        navigate("/dashboard");
+      } else {
+        toast.error("Sign in failed. Please try again.");
+      }
     } catch (err) {
       console.error("OAuth error", err);
       toast.error("Sign in failed. Please try again.");
@@ -34,21 +36,16 @@ const Login = () => {
     const password = formData.get("password") as string;
 
     try {
-      const result = await signIn.create({
-        identifier: email,
-        password,
-      });
-      
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+      const success = await signIn(email, password);
+      if (success) {
         toast.success("Login successful!");
         navigate("/dashboard");
       } else {
-        console.log("Additional verification needed", result);
+        toast.error("Invalid email or password. Please try again.");
       }
     } catch (err: any) {
       console.error("Sign in error", err);
-      toast.error(err.errors?.[0]?.message || "Sign in failed. Please try again.");
+      toast.error("Sign in failed. Please try again.");
     }
   };
 
@@ -111,7 +108,7 @@ const Login = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleOAuthSignIn("oauth_google")}
+                onClick={() => handleOAuthSignIn("google")}
                 className="w-full"
               >
                 Google
@@ -119,7 +116,7 @@ const Login = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleOAuthSignIn("oauth_github")}
+                onClick={() => handleOAuthSignIn("github")}
                 className="w-full"
               >
                 GitHub
