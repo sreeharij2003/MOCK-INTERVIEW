@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -9,6 +8,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, Video, Mic, MessageSquare, CheckCircle2, Briefcase, Code } from "lucide-react";
 import { technicalCategories } from "@/data/technicalQuestions";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthContext } from "@/App";
 
 const roleOptions = [
   { value: "software-engineer", label: "Software Engineer" },
@@ -36,22 +37,83 @@ const experienceLevels = [
 
 const InterviewSetup = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { isSignedIn } = useAuthContext();
+  
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
   const [interviewType, setInterviewType] = useState("text");
   const [interviewMode, setInterviewMode] = useState("behavioral");
   const [technicalCategory, setTechnicalCategory] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleStartInterview = () => {
-    navigate("/interview/session", { 
-      state: { 
-        role: selectedRole, 
-        level: selectedLevel, 
-        type: interviewType,
-        mode: interviewMode,
-        category: technicalCategory
-      } 
-    });
+  // API base URL
+  const API_URL = 'http://localhost:5000/api';
+  
+  const handleStartInterview = async () => {
+    if (!isSignedIn) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to start an interview",
+        variant: "destructive"
+      });
+      navigate("/login");
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Create interview session on the server
+      const response = await fetch(`${API_URL}/interviews/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          role: selectedRole,
+          level: selectedLevel,
+          type: interviewType,
+          mode: interviewMode,
+          category: technicalCategory
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create interview session');
+      }
+      
+      const data = await response.json();
+      
+      // Navigate to the interview session with the session data
+      navigate("/interview/session", { 
+        state: { 
+          sessionId: data.session.id,
+          role: selectedRole, 
+          level: selectedLevel, 
+          type: interviewType,
+          mode: interviewMode,
+          category: technicalCategory
+        } 
+      });
+    } catch (error) {
+      console.error('Error starting interview:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to start interview session",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = () => {
@@ -250,11 +312,11 @@ const InterviewSetup = () => {
               <CardFooter>
                 <Button 
                   onClick={handleStartInterview} 
-                  disabled={!isFormValid()}
+                  disabled={!isFormValid() || isLoading}
                   className="w-full gap-2"
                 >
-                  Start Interview
-                  <ArrowRight size={16} />
+                  {isLoading ? "Creating session..." : "Start Interview"}
+                  {!isLoading && <ArrowRight size={16} />}
                 </Button>
               </CardFooter>
             </Card>

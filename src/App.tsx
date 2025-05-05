@@ -116,39 +116,84 @@ function useAuth() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  
+  // API base URL
+  const API_URL = 'http://localhost:5000/api';
   
   // Check if user is already logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsSignedIn(true);
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchUserProfile(storedToken);
+    } else {
+      setIsLoaded(true);
     }
-    setIsLoaded(true);
   }, []);
   
-  const signIn = async (email: string, password: string): Promise<boolean> => {
-    // Simple mock authentication
-    if (password.length >= 6) {
-      const userData = { email };
+  // Fetch user profile with token
+  const fetchUserProfile = async (authToken: string) => {
+    try {
+      const response = await fetch(`${API_URL}/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
       
-      // Store the user data
-      localStorage.setItem('user', JSON.stringify(userData));
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        setIsSignedIn(true);
+      } else {
+        // Token invalid, clear storage
+        localStorage.removeItem('token');
+        setToken(null);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setIsLoaded(true);
+    }
+  };
+  
+  const signIn = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_URL}/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+      
+      if (!response.ok) {
+        return false;
+      }
+      
+      const data = await response.json();
+      
+      // Store the token
+      localStorage.setItem('token', data.token);
+      setToken(data.token);
       
       // Update state
-      setUser(userData);
+      setUser(data.user);
       setIsSignedIn(true);
       
       // Dispatch event for user change
       window.dispatchEvent(new CustomEvent('user-changed'));
       
       return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
   
   const signOut = () => {
-    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
     setIsSignedIn(false);
     
