@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/App";
@@ -8,15 +8,22 @@ import { toast } from "sonner";
 const Signup = () => {
   const navigate = useNavigate();
   const { signIn, isLoaded } = useAuthContext();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   
   if (!isLoaded) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
   const handleOAuthSignUp = async (provider: string) => {
+    setIsRegistering(true);
     try {
       // Mock OAuth signup
-      const success = await signIn("user@example.com", "password123");
+      const success = await signIn("demo@example.com", "password123");
       if (success) {
         toast.success("Registration successful!");
         navigate("/dashboard");
@@ -26,30 +33,45 @@ const Signup = () => {
     } catch (err) {
       console.error("OAuth error", err);
       toast.error("Sign up failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
     }
   };
 
   const handleEmailSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
+    setError("");
+    setIsRegistering(true);
+    
     try {
-      // Mock signup process
+      if (!firstName || !lastName || !email || !password) {
+        setError("All fields are required");
+        setIsRegistering(false);
+        return;
+      }
+      
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters");
+        setIsRegistering(false);
+        return;
+      }
+      
+      // Register directly with signIn since we're using mock auth
       const success = await signIn(email, password);
       
       if (success) {
         toast.success("Registration successful!");
         navigate("/dashboard");
       } else {
+        setError("Sign up failed. Please try again.");
         toast.error("Sign up failed. Please try again.");
       }
     } catch (err: any) {
       console.error("Sign up error", err);
+      setError(err.message || "Sign up failed. Please try again.");
       toast.error("Sign up failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -62,6 +84,12 @@ const Signup = () => {
             <p className="mt-2 text-gray-600">Get started with InterviewAce today</p>
           </div>
           
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleEmailSignUp} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -72,7 +100,9 @@ const Signup = () => {
                   type="text" 
                   required
                   className="w-full px-3 py-2 border rounded-md"
-                  placeholder="John" 
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                 />
               </div>
               
@@ -84,7 +114,9 @@ const Signup = () => {
                   type="text" 
                   required
                   className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Doe" 
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                 />
               </div>
             </div>
@@ -97,7 +129,9 @@ const Signup = () => {
                 type="email" 
                 required
                 className="w-full px-3 py-2 border rounded-md"
-                placeholder="your.email@example.com" 
+                placeholder="your.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -109,12 +143,19 @@ const Signup = () => {
                 type="password" 
                 required
                 className="w-full px-3 py-2 border rounded-md"
-                placeholder="••••••••" 
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
+              <p className="text-xs text-gray-500">Password must be at least 6 characters</p>
             </div>
 
-            <Button type="submit" className="w-full">
-              Sign Up with Email
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isRegistering}
+            >
+              {isRegistering ? "Signing Up..." : "Sign Up with Email"}
             </Button>
 
             <div className="relative my-4">
@@ -132,6 +173,7 @@ const Signup = () => {
                 variant="outline" 
                 onClick={() => handleOAuthSignUp("google")}
                 className="w-full"
+                disabled={isRegistering}
               >
                 Google
               </Button>
@@ -140,6 +182,7 @@ const Signup = () => {
                 variant="outline" 
                 onClick={() => handleOAuthSignUp("github")}
                 className="w-full"
+                disabled={isRegistering}
               >
                 GitHub
               </Button>

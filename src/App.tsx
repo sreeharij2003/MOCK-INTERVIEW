@@ -116,75 +116,40 @@ function useAuth() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  
-  // API base URL
-  const API_URL = 'http://localhost:5000/api';
   
   // Check if user is already logged in
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      fetchUserProfile(storedToken);
-    } else {
-      setIsLoaded(true);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      setIsSignedIn(true);
     }
+    setIsLoaded(true);
   }, []);
-  
-  // Fetch user profile with token
-  const fetchUserProfile = async (authToken: string) => {
-    try {
-      const response = await fetch(`${API_URL}/users/profile`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-      
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        setIsSignedIn(true);
-      } else {
-        // Token invalid, clear storage
-        localStorage.removeItem('token');
-        setToken(null);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-    } finally {
-      setIsLoaded(true);
-    }
-  };
   
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_URL}/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
-      
-      if (!response.ok) {
+      // For demo purposes, accept any valid email format and password with at least 6 characters
+      if (email.includes('@') && password.length >= 6) {
+        const userData = { email };
+        
+        // Store user in localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Update state
+        setUser(userData);
+        setIsSignedIn(true);
+        
+        // Dispatch event for user change
+        window.dispatchEvent(new CustomEvent('user-changed'));
+        
+        console.info('User changed to:', email);
+        
+        return true;
+      } else {
+        console.error('Invalid email or password format');
         return false;
       }
-      
-      const data = await response.json();
-      
-      // Store the token
-      localStorage.setItem('token', data.token);
-      setToken(data.token);
-      
-      // Update state
-      setUser(data.user);
-      setIsSignedIn(true);
-      
-      // Dispatch event for user change
-      window.dispatchEvent(new CustomEvent('user-changed'));
-      
-      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -192,8 +157,7 @@ function useAuth() {
   };
   
   const signOut = () => {
-    localStorage.removeItem('token');
-    setToken(null);
+    localStorage.removeItem('user');
     setUser(null);
     setIsSignedIn(false);
     
