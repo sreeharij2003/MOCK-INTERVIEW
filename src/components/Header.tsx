@@ -1,11 +1,19 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Home, LogOut, User } from "lucide-react";
+import { Menu, X, Home, LogOut, User, UserCog, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/App";
 import { useProgress } from "@/contexts/ProgressContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -37,6 +45,26 @@ const Header = () => {
 
   const goToHome = () => {
     navigate("/");
+  };
+
+  const goToDashboard = () => {
+    navigate("/dashboard");
+  };
+
+  const goToProfile = () => {
+    // In a real app, navigate to a profile page
+    toast({
+      title: "Profile",
+      description: "Profile page not implemented yet",
+    });
+  };
+
+  const goToSettings = () => {
+    // In a real app, navigate to a settings page
+    toast({
+      title: "Settings",
+      description: "Settings page not implemented yet",
+    });
   };
 
   return (
@@ -83,17 +111,39 @@ const Header = () => {
               <Button 
                 variant="outline" 
                 className="mr-2 hover:bg-primary/10" 
-                onClick={() => navigate("/dashboard")}
+                onClick={goToDashboard}
               >
                 Dashboard
               </Button>
               <div className="relative">
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
-                >
-                  <User size={18} />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                      <User size={18} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={goToProfile}>
+                      <UserCog className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={goToDashboard}>
+                      <Home className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={goToSettings}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ) : (
@@ -164,11 +214,33 @@ const Header = () => {
                     variant="outline" 
                     className="w-full hover:bg-primary/10"
                     onClick={() => {
-                      navigate("/dashboard");
+                      goToDashboard();
                       toggleMobileMenu();
                     }}
                   >
                     Dashboard
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="w-full hover:bg-primary/10"
+                    onClick={() => {
+                      goToProfile();
+                      toggleMobileMenu();
+                    }}
+                  >
+                    <UserCog size={16} className="mr-2" />
+                    Profile
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="w-full hover:bg-primary/10"
+                    onClick={() => {
+                      goToSettings();
+                      toggleMobileMenu();
+                    }}
+                  >
+                    <Settings size={16} className="mr-2" />
+                    Settings
                   </Button>
                   <Button 
                     variant="destructive" 
