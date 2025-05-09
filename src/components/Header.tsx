@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Home, LogOut, User, UserCog, Settings } from "lucide-react";
@@ -51,18 +52,20 @@ const Header = () => {
   };
 
   const goToProfile = () => {
-    // In a real app, navigate to a profile page
+    // Navigate to profile page - we'll implement the actual navigation
+    navigate("/profile");
     toast({
       title: "Profile",
-      description: "Profile page not implemented yet",
+      description: "Navigating to profile page",
     });
   };
 
   const goToSettings = () => {
-    // In a real app, navigate to a settings page
+    // Navigate to settings page - we'll implement the actual navigation
+    navigate("/settings");
     toast({
       title: "Settings",
-      description: "Settings page not implemented yet",
+      description: "Navigating to settings page",
     });
   };
 
@@ -121,7 +124,7 @@ const Header = () => {
                       <User size={18} />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56 bg-white">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={goToProfile}>

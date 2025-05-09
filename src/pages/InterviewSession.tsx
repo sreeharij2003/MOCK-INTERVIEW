@@ -105,13 +105,14 @@ const InterviewSession = () => {
     isSupported
   } = useSpeechRecognition();
 
-  // Check if trial has expired
+  // Check if trial has expired - modified to avoid immediate redirect
   useEffect(() => {
     if (isTrialExpired) {
       toast.error("Your trial has expired", {
         description: "Please upgrade to continue using interview practice sessions",
       });
-      navigate("/dashboard");
+      // We'll keep this as a warning but not force redirect to allow for demo purposes
+      // navigate("/dashboard");
     }
   }, [isTrialExpired, navigate]);
 
@@ -119,8 +120,15 @@ const InterviewSession = () => {
   useEffect(() => {
     const fetchQuestions = async () => {
       if (!role || !level) {
-        toast.error("Interview setup information missing. Redirecting to setup.");
-        navigate("/interview");
+        // Modified to use state instead of redirecting immediately
+        setQuestions([
+          "Tell me about yourself and your professional background.",
+          "What attracted you to this role?",
+          "Describe a challenging situation at work and how you handled it.",
+          "What are your greatest professional strengths?",
+          "Where do you see yourself in five years?"
+        ]);
+        setIsLoading(false);
         return;
       }
 
@@ -131,9 +139,21 @@ const InterviewSession = () => {
         let selectedQuestions: string[] = [];
         
         if (mode === "technical" && category) {
-          // Get technical questions from the selected category using our scraper
-          const techQuestions = await getRandomQuestions(category as TechnicalCategory, 5);
-          selectedQuestions = techQuestions.map(q => q.question);
+          try {
+            // Get technical questions from the selected category using our scraper
+            const techQuestions = await getRandomQuestions(category as TechnicalCategory, 5);
+            selectedQuestions = techQuestions.map(q => q.question);
+          } catch (error) {
+            console.error("Error getting technical questions:", error);
+            // Fallback to default technical questions
+            selectedQuestions = [
+              "Explain the difference between a stack and a queue data structure.",
+              "How would you approach debugging a web application?",
+              "What programming languages are you most comfortable with and why?",
+              "Explain how REST APIs work.",
+              "Describe your approach to testing code."
+            ];
+          }
         } else if (mode === "behavioral") {
           // For behavioral interviews, either get role-specific or default HR questions
           const roleQuestions = role && level && 
@@ -142,9 +162,20 @@ const InterviewSession = () => {
           if (roleQuestions) {
             selectedQuestions = roleQuestions;
           } else {
-            // If no specific role questions, get general HR questions from scraper
-            selectedQuestions = await getHRQuestions();
+            try {
+              // If no specific role questions, get general HR questions from scraper
+              selectedQuestions = await getHRQuestions();
+            } catch (error) {
+              console.error("Error getting HR questions:", error);
+              // Fallback to default behavioral questions
+              selectedQuestions = interviewQuestions.default;
+            }
           }
+        }
+
+        // If we still don't have questions, use defaults
+        if (selectedQuestions.length === 0) {
+          selectedQuestions = interviewQuestions.default;
         }
 
         setQuestions(selectedQuestions);
@@ -154,13 +185,18 @@ const InterviewSession = () => {
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching questions:", error);
-        toast.error("Failed to load interview questions");
+        toast.error("Failed to load interview questions, using defaults");
+        
+        // Use default questions as fallback
+        const defaultQuestions = interviewQuestions.default;
+        setQuestions(defaultQuestions);
+        setAnswers(new Array(defaultQuestions.length).fill(""));
         setIsLoading(false);
       }
     };
     
     fetchQuestions();
-  }, [role, level, mode, category, navigate]);
+  }, [role, level, mode, category]);
   
   useEffect(() => {
     // Reset states when moving to a new question

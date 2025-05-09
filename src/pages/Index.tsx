@@ -1,4 +1,3 @@
-
 import React from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
@@ -9,13 +8,12 @@ import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import ChatBot from "@/components/ChatBot";
 import { useAuthContext } from "@/App";
-import { Navigate } from "react-router-dom";
 
 const Index = () => {
+  // We'll keep the context to pass to Header, but always show the landing page
+  // regardless of authentication status
   const { isSignedIn, isLoaded } = useAuthContext();
 
-  // If the user is already signed in, we should show the landing page
-  // rather than redirecting to dashboard, so they can see the marketing content
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
