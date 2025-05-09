@@ -91,7 +91,8 @@ const InterviewSession = () => {
   const [textAnswer, setTextAnswer] = useState("");
   const [timeRemaining, setTimeRemaining] = useState(120);
   const [isFinished, setIsFinished] = useState(false);
-  const [isPreparing, setIsPreparing] = useState(mode === "technical");
+  // Modified: Always start with preparation time for any interview type
+  const [isPreparing, setIsPreparing] = useState(true);
   const [questions, setQuestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionStartTime] = useState<number>(Date.now());
@@ -209,14 +210,9 @@ const InterviewSession = () => {
     setTextAnswer("");
     resetTranscript();
     
-    if (mode === "technical") {
-      // Start in preparation mode for technical interviews
-      setIsPreparing(true);
-    } else {
-      // For behavioral interviews, start the response timer
-      setTimeRemaining(120);
-      startResponseTimer();
-    }
+    // Modified: Always start in preparation mode for all interview types
+    setIsPreparing(true);
+    
   }, [currentQuestionIndex]);
   
   const startResponseTimer = () => {
