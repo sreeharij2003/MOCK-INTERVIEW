@@ -10,6 +10,7 @@ import { ArrowRight, Video, Mic, MessageSquare, CheckCircle2, Briefcase, Code } 
 import { technicalCategories } from "@/data/technicalQuestions";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/App";
+import { useProgress } from "@/contexts/ProgressContext";
 
 const roleOptions = [
   { value: "software-engineer", label: "Software Engineer" },
@@ -39,6 +40,7 @@ const InterviewSetup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isSignedIn } = useAuthContext();
+  const { isTrialExpired } = useProgress();
   
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
@@ -50,7 +52,7 @@ const InterviewSetup = () => {
   // API base URL
   const API_URL = 'http://localhost:5000/api';
   
-  const handleStartInterview = async () => {
+  const handleStartInterview = () => {
     if (!isSignedIn) {
       toast({
         title: "Authentication required",
@@ -61,57 +63,39 @@ const InterviewSetup = () => {
       return;
     }
     
+    if (isTrialExpired) {
+      toast({
+        title: "Trial expired",
+        description: "Your trial has expired. Please upgrade to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
+      // Generate a simple random session ID instead of calling the API
+      const sessionId = Math.random().toString(36).substring(2, 15);
       
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-      
-      // Create interview session on the server
-      const response = await fetch(`${API_URL}/interviews/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          role: selectedRole,
-          level: selectedLevel,
-          type: interviewType,
-          mode: interviewMode,
-          category: technicalCategory
-        })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create interview session');
-      }
-      
-      const data = await response.json();
-      
-      // Navigate to the interview session with the session data
+      // Directly navigate to the interview session with the necessary state
       navigate("/interview/session", { 
         state: { 
-          sessionId: data.session.id,
+          sessionId: sessionId,
           role: selectedRole, 
           level: selectedLevel, 
           type: interviewType,
           mode: interviewMode,
           category: technicalCategory
-        } 
+        }
       });
     } catch (error) {
       console.error('Error starting interview:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to start interview session",
+        description: "Failed to start interview session",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
     }
   };

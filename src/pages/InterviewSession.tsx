@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowRight, Mic, MicOff, Clock } from "lucide-react";
 import { toast } from "sonner";
 import PreparationTimer from "@/components/PreparationTimer";
-import { getRandomQuestions, TechnicalCategory, TechnicalQuestion } from "@/data/technicalQuestions";
+import { getRandomQuestions, TechnicalCategory } from "@/data/technicalQuestions";
 import { getHRQuestions } from "@/utils/questionScraper";
 import { Loader2 } from "lucide-react";
 import { useProgress } from "@/contexts/ProgressContext";
@@ -105,22 +105,21 @@ const InterviewSession = () => {
     isSupported
   } = useSpeechRecognition();
 
-  // Check if trial has expired - modified to avoid immediate redirect
+  // Check if trial has expired - show warning but don't redirect
   useEffect(() => {
     if (isTrialExpired) {
       toast.error("Your trial has expired", {
         description: "Please upgrade to continue using interview practice sessions",
       });
-      // We'll keep this as a warning but not force redirect to allow for demo purposes
-      // navigate("/dashboard");
+      // We'll keep this as a warning but not force redirect for better UX
     }
-  }, [isTrialExpired, navigate]);
+  }, [isTrialExpired]);
 
   // Setup questions based on interview mode
   useEffect(() => {
     const fetchQuestions = async () => {
+      // Ensure we have all required state, otherwise use defaults
       if (!role || !level) {
-        // Modified to use state instead of redirecting immediately
         setQuestions([
           "Tell me about yourself and your professional background.",
           "What attracted you to this role?",
@@ -128,6 +127,7 @@ const InterviewSession = () => {
           "What are your greatest professional strengths?",
           "Where do you see yourself in five years?"
         ]);
+        setAnswers(new Array(5).fill(""));
         setIsLoading(false);
         return;
       }
@@ -140,7 +140,7 @@ const InterviewSession = () => {
         
         if (mode === "technical" && category) {
           try {
-            // Get technical questions from the selected category using our scraper
+            // Try to get technical questions from the selected category
             const techQuestions = await getRandomQuestions(category as TechnicalCategory, 5);
             selectedQuestions = techQuestions.map(q => q.question);
           } catch (error) {
@@ -155,7 +155,7 @@ const InterviewSession = () => {
             ];
           }
         } else if (mode === "behavioral") {
-          // For behavioral interviews, either get role-specific or default HR questions
+          // For behavioral interviews, get role-specific or default HR questions
           const roleQuestions = role && level && 
             interviewQuestions[role as keyof typeof interviewQuestions]?.[level as "entry" | "mid" | "senior"];
           
@@ -163,8 +163,14 @@ const InterviewSession = () => {
             selectedQuestions = roleQuestions;
           } else {
             try {
-              // If no specific role questions, get general HR questions from scraper
-              selectedQuestions = await getHRQuestions();
+              // Try to get general HR questions
+              const hrQuestions = await getHRQuestions();
+              if (hrQuestions && hrQuestions.length > 0) {
+                selectedQuestions = hrQuestions;
+              } else {
+                // If API fails, use default questions
+                selectedQuestions = interviewQuestions.default;
+              }
             } catch (error) {
               console.error("Error getting HR questions:", error);
               // Fallback to default behavioral questions
